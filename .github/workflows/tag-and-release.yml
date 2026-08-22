@@ -1,0 +1,117 @@
+name: Tag Version & Release
+on:
+  push:
+    branches:
+    - tfm
+
+jobs:
+  create_nuget_packages:
+    name: Build & Create NuGet Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    if: github.ref == 'refs/heads/tfm' # only run job if on the tfm deployment branch
+    env:
+      NUGET_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      VERSION_PROJECT: Scryber.Components/Scryber.Components.csproj
+      NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      # The restore pulls TFM.Scryber.Core.OpenType from GitHub Packages, and nuget.config
+      # resolves its credentials from these two.
+      GITHUB_USER: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Install the .NET SDK indicated in the global.json file.
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        global-json-file: global.json
+        source-url: ${{ env.NUGET_URL }}
+
+    # setup-dotnet writes a NuGet config carrying the GitHub Packages credential. The build and the
+    # test projects also need packages from nuget.org, so make sure that source is present too.
+    - name: Ensure nuget.org source
+      run: dotnet nuget list source | grep -q api.nuget.org || dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
+
+    # The version is maintained in Directory.Build.props, so read it via MSBuild evaluation of the
+    # designated project. Both packages in this repo share the one version.
+    - name: Get Version
+      id: get-version
+      run: |
+        VERSION=$(dotnet msbuild ${VERSION_PROJECT} -getProperty:AssemblyVersion)
+        echo "TFM.Scryber.Core: ${VERSION}"
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+    - name: Check if release already exists
+      id: check-release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{ steps.get-version.outputs.version }}
+      run: |
+        if gh release view "v${VERSION}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+          echo "Release v${VERSION} already exists. Skipping release creation."
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "No existing release for v${VERSION}. Proceeding."
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Build
+      run: dotnet build Scryber.Core.sln --configuration Release
+
+    # Filtered rather than a full "dotnet test": this fork tracks upstream, whose suite carries
+    # around 30 pre-existing failures here, most of them dependent on network access or local file
+    # paths. Gating a release on those would block every publish, so the gate is the concurrency
+    # regression test that this fork exists to protect.
+    - name: Test
+      run: dotnet test Scryber.UnitTest/Scryber.UnitTests.csproj --configuration Release --no-build --filter "FullyQualifiedName~FontWidthsConcurrency_Test"
+
+    # No -p:PackageVersion override: both packages take their version from Directory.Build.props,
+    # where VersionPrefix already derives from AssemblyVersion.
+    #
+    # No --no-build either, unlike the other repos: Scryber.Components bundles its sibling project
+    # assemblies into the package via the CopyProjectReferencesToPackage target, which depends on
+    # ResolveReferences and so invokes Build. With --no-build that fails as NETSDK1085. The Build
+    # step above means this is an incremental no-op rather than a second full compile.
+    - name: Package NuGet Packages
+      run: |
+        dotnet pack Scryber.Components/Scryber.Components.csproj --no-restore --configuration Release --output .
+        dotnet pack Scryber.Components.Mvc/Scryber.Components.Mvc.csproj --no-restore --configuration Release --output .
+
+    # --skip-duplicate: a version that is already published is skipped on the 409, so a push that did
+    # not bump the version does not fail the run.
+    - name: Publish NuGet Packages to GitHub Packages
+      run: |
+        dotnet nuget push TFM.Scryber.Core.${{ steps.get-version.outputs.version }}.nupkg -s ${{ env.NUGET_URL }} --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+        dotnet nuget push TFM.Scryber.Core.Mvc.${{ steps.get-version.outputs.version }}.nupkg -s ${{ env.NUGET_URL }} --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+    # Branch is release/v<version>, not v<version>: the GitHub release below creates a tag named
+    # v<version>, and a branch and tag of the same name make every later "git checkout v<version>"
+    # ambiguous. Pushing the ref directly is also idempotent, so a re-run cannot fail on an existing
+    # branch the way "git checkout -b" would.
+    - name: Create release branch
+      if: steps.check-release.outputs.exists == 'false'
+      env:
+        VERSION: ${{ steps.get-version.outputs.version }}
+      run: |
+        BRANCH="release/v${VERSION}"
+        if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null 2>&1; then
+          echo "Branch ${BRANCH} already exists. Skipping."
+        else
+          git push origin "HEAD:refs/heads/${BRANCH}"
+        fi
+
+    - name: Create GitHub Release
+      if: steps.check-release.outputs.exists == 'false'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{ steps.get-version.outputs.version }}
+      run: |
+        gh release create "v${VERSION}" \
+          --repo "${{ github.repository }}" \
+          --title "v${VERSION}" \
+          --notes "TFM.Scryber.Core ${VERSION} | TFM.Scryber.Core.Mvc ${VERSION}" \
+          --generate-notes

@@ -5,15 +5,14 @@
     <LangVersion>12.0</LangVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Scryber.snk</AssemblyOriginatorKeyFile>
-    <PackageId>Scryber.Core</PackageId>
-    <PackageVersion>9.7.1</PackageVersion>
+    <PackageId>TFM.Scryber.Core</PackageId>
     <Authors>richard@paperworkday.com</Authors>
     <Copyright>Richard Hewitson 2026</Copyright>
     <License>LICENSE.md</License>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Owners>richard@scryber.co.uk</Owners>
-    <PackageProjectUrl>https://github.com/richard-scryber/scryber.core</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/twofatmonkeys/TFM.Scryber.Core</PackageProjectUrl>
     <PackageReleaseNotes>9.7.0
 BREAKING CHANGE: &lt;img width&gt;/&lt;img height&gt; already accepted integer pixels only (from 9.6.0.7-beta); now correctly documented as a breaking change for this major version bump.
 Added CSS aspect-ratio support for images and block elements.
@@ -159,15 +158,14 @@ See: https://paperwork.help/changelog/scryber_core.html for a full break down.</
     <Description>Scryber is an advanced PDF generation engine based around HTML templates with CSS styles and SVG drawing. It includes full flowing pages, dynamic template binding on your object model and referenced external files, images, css and fonts. 
 Easily create documents from your Apps, MVC sites, or Javascipt ajax calls.
 
-This framework is built entirely in .NET supporting Blazor WASM and is released under the LGPL licence so you can use to it in commercial applications.</Description>
+This framework is built entirely in .NET supporting Blazor WASM and is released under the LGPL licence so you can use to it in commercial applications.
+
+This is a Two Fat Monkeys fork of richard-scryber/scryber.core, published only so two concurrency fixes can be consumed before they are released upstream. The original library is the work of Richard Hewitson and remains under its original licence. Prefer the upstream Scryber.Core package once the fixes have landed there.</Description>
     <PackOnBuild>false</PackOnBuild>
     <RootNamespace>Scryber</RootNamespace>
-    <Version>9.7.1.0</Version>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIcon>PaperworkLogoTransparent.png</PackageIcon>
-    <RepositoryUrl>https://github.com/richard-scryber/scryber.core</RepositoryUrl>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>9.7.1.0</FileVersion>
+    <RepositoryUrl>https://github.com/twofatmonkeys/TFM.Scryber.Core</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <Configurations>Release;Debug</Configurations>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
@@ -256,7 +254,7 @@ This framework is built entirely in .NET supporting Blazor WASM and is released 
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="Scryber.Core.OpenType" />
+    <PackageReference Include="TFM.Scryber.Core.OpenType" />
     <PackageReference Include="System.Resources.Extensions" />
     <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="HtmlAgilityPack" />

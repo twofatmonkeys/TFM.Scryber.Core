@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <DotNetExtensionsVersion>8.0.0</DotNetExtensionsVersion>
@@ -24,7 +24,7 @@
     <PackageVersion Include="MSTest.TestAdapter" Version="3.4.3" />
     <PackageVersion Include="MSTest.TestFramework" Version="3.4.3" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-    <PackageVersion Include="Scryber.Core" Version="9.6.0.8-beta" />
-    <PackageVersion Include="Scryber.Core.OpenType" Version="9.2.0.0" />
+    <PackageVersion Include="TFM.Scryber.Core" Version="1.26.235.1" />
+    <PackageVersion Include="TFM.Scryber.Core.OpenType" Version="1.26.235.1" />
   </ItemGroup>
 </Project>
