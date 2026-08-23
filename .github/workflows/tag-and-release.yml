@@ -64,10 +64,11 @@ jobs:
 
     # Filtered rather than a full "dotnet test": this fork tracks upstream, whose suite carries
     # around 30 pre-existing failures here, most of them dependent on network access or local file
-    # paths. Gating a release on those would block every publish, so the gate is the concurrency
-    # regression test that this fork exists to protect.
+    # paths. Gating a release on those would block every publish, so the gate is the font width
+    # regression tests the fixes this fork carries are protected by. The filter takes the whole
+    # FontWidths group, so a new test class named for it is covered without touching this.
     - name: Test
-      run: dotnet test Scryber.UnitTest/Scryber.UnitTests.csproj --configuration Release --no-build --filter "FullyQualifiedName~FontWidthsConcurrency_Test"
+      run: dotnet test Scryber.UnitTest/Scryber.UnitTests.csproj --configuration Release --no-build --filter "FullyQualifiedName~FontWidths"
 
     # No -p:PackageVersion override: both packages take their version from Directory.Build.props,
     # where VersionPrefix already derives from AssemblyVersion.
