@@ -650,10 +650,12 @@ namespace Scryber.PDF.Resources
                 }
             }
 
-            //Render the FontDescriptor
+            //Render the FontDescriptor. It takes the BaseFont name rather than the resource
+            //name, because the descriptor's /FontName is required to match the font
+            //dictionary's /BaseFont. Only the dictionary's own /Name entry is the resource name.
             if (this.Descriptor != null && this.IsEmbedable)
             {
-                PDFObjectRef desc = this.Descriptor.RenderToPDF(name, context, writer);
+                PDFObjectRef desc = this.Descriptor.RenderToPDF(this.BaseType, context, writer);
                 if (null != desc)
                 {
                     writer.BeginDictionaryEntry("FontDescriptor");
@@ -1066,7 +1068,11 @@ namespace Scryber.PDF.Resources
             desc.MaxWidth = (head.XMax * PDFGlyphUnits) / unitsperem;
             desc.XHeight = os2.CapHeight;
 
-            
+            //Ascent, Descent, CapHeight, XHeight and AvgWidth stay in the font's design units
+            //because GetFontMetrics scales them by fontSize / FontUnitsPerEm. The descriptor
+            //converts them to glyph space itself when it writes them out.
+            desc.FontUnitsPerEm = unitsperem;
+
             if (embed)
                 desc.FontFile = ttf.FileData;
             else

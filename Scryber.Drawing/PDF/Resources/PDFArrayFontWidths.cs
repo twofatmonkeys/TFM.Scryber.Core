@@ -74,11 +74,13 @@ namespace Scryber.PDF.Resources
         #region public override bool IsEmpty {get;}
 
         /// <summary>
-        /// Overrides base implmentation to return true is there are no widths in this array
+        /// Returns true when there are no widths in this array. Both RenderAnsiFont
+        /// implementations gate the /FirstChar, /LastChar and /Widths entries on this, so an
+        /// inverted result drops the widths a simple TrueType font is required to carry.
         /// </summary>
         public override bool IsEmpty
         {
-            get { return this.Count > 0; }
+            get { return this.Count == 0; }
         }
 
         #endregion

@@ -35,11 +35,11 @@ namespace Scryber.PDF.Resources
         #region public override bool IsEmpty {get;}
 
         /// <summary>
-        /// Overrides base implmentation to return true is there are no widths in the compositve font
+        /// Returns true when no glyphs have been registered in the composite font.
         /// </summary>
         public override bool IsEmpty
         {
-            get { return this._offset2char.Count > 0; }
+            get { return this._offset2char.Count == 0; }
         }
 
         #endregion
