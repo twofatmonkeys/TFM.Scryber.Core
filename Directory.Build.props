@@ -7,7 +7,7 @@
        AssemblyVersion is authoritative and the other two derive from it, which is also what the
        release workflow reads via "dotnet msbuild -getProperty:AssemblyVersion". -->
   <PropertyGroup>
-    <AssemblyVersion>1.26.235.2</AssemblyVersion>
+    <AssemblyVersion>1.26.236.1</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <VersionPrefix>$(AssemblyVersion)</VersionPrefix>
     <Company>Two Fat Monkeys</Company>
