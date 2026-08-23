@@ -241,6 +241,41 @@ namespace Scryber.PDF.Resources
             get { return _ftype; }
             set { _ftype = value; }
         }
+
+        private int _unitsperem = PDFGlyphUnits;
+
+        /// <summary>
+        /// Gets or sets the font programme's design units per em, used to convert the metrics
+        /// below into the glyph space a PDF font descriptor is measured in.
+        /// </summary>
+        /// <remarks>
+        /// Ascent, Descent, CapHeight, XHeight and AvgWidth are all held in the font's own design
+        /// units, because FontDefinition.GetFontMetrics reads them back and scales by
+        /// fontSize / FontUnitsPerEm. They are converted on the way out in RenderToPDF instead, so
+        /// both readers get the units they expect. BoundingBox and MaxWidth are the exception -
+        /// their loaders convert before assigning, so they are already in glyph space.
+        /// </remarks>
+        public int FontUnitsPerEm
+        {
+            get { return _unitsperem; }
+            set { _unitsperem = value; }
+        }
+
+        /// <summary>
+        /// The unit size of the glyph space a PDF font descriptor's metrics are expressed in.
+        /// </summary>
+        private const int PDFGlyphUnits = 1000;
+
+        /// <summary>
+        /// Converts a value in the font programme's design units to PDF glyph space.
+        /// </summary>
+        private int ToGlyphUnits(int fontUnits)
+        {
+            if (this.FontUnitsPerEm <= 0 || this.FontUnitsPerEm == PDFGlyphUnits)
+                return fontUnits;
+
+            return (int)Math.Round((fontUnits * (double)PDFGlyphUnits) / this.FontUnitsPerEm);
+        }
         
         public PDFFontDescriptor() : base(ObjectTypes.FontDescriptor)
         {
@@ -283,19 +318,18 @@ namespace Scryber.PDF.Resources
             if(this.Weight != 400)
                 writer.WriteDictionaryNumberEntry("FontWeight", this.Weight);
 
-            writer.WriteDictionaryNumberEntry("FontWeight", 700);
             writer.WriteDictionaryNumberEntry("Flags", (int)this.Flags);
-            writer.WriteDictionaryNumberEntry("Ascent",(int)(this.Ascent * 0.6));
-            writer.WriteDictionaryNumberEntry("Descent", this.Descent);
+            writer.WriteDictionaryNumberEntry("Ascent", this.ToGlyphUnits(this.Ascent));
+            writer.WriteDictionaryNumberEntry("Descent", this.ToGlyphUnits(this.Descent));
 
             //if (this.Leading != 0.0)
             //    writer.WriteDictionaryNumberEntry("Leading", this.Leading);
 
             if(this.CapHeight != 0.0)
-                writer.WriteDictionaryNumberEntry("CapHeight", this.CapHeight);
+                writer.WriteDictionaryNumberEntry("CapHeight", this.ToGlyphUnits(this.CapHeight));
 
             if(this.XHeight != 0.0)
-                writer.WriteDictionaryNumberEntry("XHeight", this.XHeight);
+                writer.WriteDictionaryNumberEntry("XHeight", this.ToGlyphUnits(this.XHeight));
 
             writer.WriteDictionaryNumberEntry("StemV", this.StemV);
             
@@ -305,7 +339,7 @@ namespace Scryber.PDF.Resources
                 writer.WriteDictionaryNumberEntry("StemH", this.StemH);
 
             if (this.AvgWidth != 0.0)
-                writer.WriteDictionaryNumberEntry("AvgWidth", this.AvgWidth);
+                writer.WriteDictionaryNumberEntry("AvgWidth", this.ToGlyphUnits(this.AvgWidth));
 
             if (this.MaxWidth != 0.0)
                 writer.WriteDictionaryNumberEntry("MaxWidth", this.MaxWidth);
