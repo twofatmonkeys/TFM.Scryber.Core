@@ -109,7 +109,9 @@ namespace Scryber.Core.UnitTests.Drawing
 
         /// <summary>
         /// A hardcoded "/FontWeight 700" used to follow the conditional one, so every font claimed
-        /// weight 700 and any font that was not weight 400 emitted the key twice.
+        /// weight 700 and any font that was not weight 400 emitted the key twice. Removing it
+        /// exposed that the descriptor's weight was never set from the font either, so the loaders
+        /// now take it from the OS/2 table and a bold font says so.
         /// </summary>
         [TestMethod()]
         public void RenderAnsiFont_WritesFontWeightOnceAndOnlyWhenItIsNotRegular()
