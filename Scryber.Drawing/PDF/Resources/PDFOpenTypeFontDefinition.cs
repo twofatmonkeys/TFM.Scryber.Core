@@ -845,10 +845,35 @@ namespace Scryber.PDF.Resources
             int spaceWidth;
             CMAPSubTable mapping;
             defn.CMapEncoding = GetOptimumEncoding(cmap, out mapping);
-            defn.Widths = GetArrayFontWidths(header, mapping, defn.CMapEncoding, hmtx, out spaceWidth);
+
+            CMAPSubTable windows;
+
+            //A font that resolves to MacRoman is written as a simple font declaring
+            ///MacRomanEncoding, but the widths and the content stream both treat a character as
+            //its own code point, which only agrees with that encoding over ASCII. Everything from
+            //0x80 up - the curly quotes, the dashes, the accented letters - selects the wrong
+            //glyph. Where the font also carries a Windows Unicode subtable it can be written as
+            ///WinAnsiEncoding instead, which is the encoding those bytes do belong to, and the
+            //same subtable string measurement already uses. A font with no Windows subtable is
+            //left on MacRoman, which is still better than nothing for the ASCII it can represent.
+            if (defn.CMapEncoding == CMapEncoding.MacRoman &&
+                null != (windows = cmap.GetOffsetTable(CMapEncoding.WindowsUnicode)))
+            {
+                defn.CMapEncoding = CMapEncoding.WindowsUnicode;
+                defn.Widths = GetWinAnsiFontWidths(header, windows, defn.CMapEncoding, hmtx, out spaceWidth);
+
+                //Set directly rather than through ConvertCMapToFontEncoding, which would map the
+                //Windows platform to UnicodeEncoding and send the font down the composite path.
+                defn.FontEncoding = FontEncoding.WinAnsiEncoding;
+            }
+            else
+            {
+                defn.Widths = GetArrayFontWidths(header, mapping, defn.CMapEncoding, hmtx, out spaceWidth);
+                defn.FontEncoding = ConvertCMapToFontEncoding(defn.CMapEncoding);
+            }
+
             defn.FontUnitsPerEm = header.UnitsPerEm;
             defn.SpaceWidthFontUnits = spaceWidth;
-            defn.FontEncoding = ConvertCMapToFontEncoding(defn.CMapEncoding);
             
             return defn;
         }
@@ -965,6 +990,52 @@ namespace Scryber.PDF.Resources
             return widths;
         }
         
+        #endregion
+
+        #region protected static PDFFontWidths GetWinAnsiFontWidths(FontHeader header, CMAPSubTable chars, CMapEncoding enc, HorizontalMetrics hmtx, out int spaceWidth)
+
+        /// <summary>
+        /// Builds the widths for a simple font written with the PDF /WinAnsiEncoding, against a
+        /// Unicode character mapping.
+        /// </summary>
+        /// <remarks>
+        /// The array is indexed by character code, so each entry is the width of the glyph
+        /// /WinAnsiEncoding assigns to that code rather than the one at that offset in the
+        /// mapping. Codes the encoding leaves undefined take the missing glyph.
+        /// </remarks>
+        protected static PDFFontWidths GetWinAnsiFontWidths(FontHeader header, CMAPSubTable chars, CMapEncoding enc, HorizontalMetrics hmtx, out int spaceWidth)
+        {
+            int unitsPerEm = header.UnitsPerEm;
+            spaceWidth = 0;
+
+            List<int> all = new List<int>();
+            int first = 0;
+            int last = 255;
+
+            for (int i = first; i <= last; i++)
+            {
+                char c = PDFWinAnsiFontWidths.GetCharacterForCode(i);
+                int moffset = (c == char.MinValue) ? 0 : chars.GetCharacterGlyphOffset(c);
+
+                if (moffset < 0)
+                    moffset = 0;
+                if (moffset >= hmtx.HMetrics.Count)
+                    moffset = hmtx.HMetrics.Count - 1;
+
+                Scryber.OpenType.SubTables.HMetric metric = hmtx.HMetrics[moffset];
+
+                int value = metric.AdvanceWidth;
+
+                if (i == 32) //Space Width
+                    spaceWidth = value;
+
+                value = (value * PDFGlyphUnits) / unitsPerEm;
+                all.Add(value);
+            }
+
+            return new PDFWinAnsiFontWidths(first, last, all, enc);
+        }
+
         #endregion
 
         #region protected static FontEncoding ConvertCMapToFontEncoding(CMapEncoding encoding)
