@@ -793,6 +793,11 @@ namespace Scryber.PDF.Resources
             desc.Flags = 32;
             desc.AvgWidth = os2.XAverageCharWidth;
 
+            //The descriptor's own weight, which was never set and so left every font on the
+            //PDFFontDescriptor default of 400. WeightClass is the ushort the OS/2 table declares,
+            //and its values are already the numbers a PDF /FontWeight takes.
+            desc.Weight = (int)os2.WeightClass;
+
             desc.BoundingBox = new int[] { 
                 (header.XMin * PDFGlyphUnits) / header.UnitsPerEm, 
                 (header.YMin * PDFGlyphUnits) / header.UnitsPerEm, 
