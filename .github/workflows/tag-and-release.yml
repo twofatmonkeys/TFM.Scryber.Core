@@ -105,6 +105,11 @@ jobs:
           git push origin "HEAD:refs/heads/${BRANCH}"
         fi
 
+    # --target is what makes the tag point at the commit that was actually built. Without it
+    # "gh release create" cuts the tag from the default branch, so v1.26.235.1, v1.26.235.2
+    # and v1.26.236.1 all landed on master HEAD rather than on the tfm commit each was built
+    # from. The release branch above already records the right commit, so nothing was lost,
+    # but the tags pointed at code that did not build them.
     - name: Create GitHub Release
       if: steps.check-release.outputs.exists == 'false'
       env:
@@ -113,6 +118,7 @@ jobs:
       run: |
         gh release create "v${VERSION}" \
           --repo "${{ github.repository }}" \
+          --target "${GITHUB_SHA}" \
           --title "v${VERSION}" \
           --notes "TFM.Scryber.Core ${VERSION} | TFM.Scryber.Core.Mvc ${VERSION}" \
           --generate-notes
